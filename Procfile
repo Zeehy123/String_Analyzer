@@ -1,1 +1,1 @@
-web: gunicorn profileinfo.wsgi
+web: gunicorn stringAnalyzer.wsgi
