@@ -15,6 +15,11 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 # Create your views here.
 
+from django.http import JsonResponse
+
+def home_view(request):
+    return JsonResponse({"message": "Welcome to String Analyzer API"})
+
 class CreateStringAnalysisResultView(APIView):
     #Post /string
 
