@@ -21,21 +21,34 @@ def home_view(request):
 
 
 # -------------------------
-# POST /strings
+# Combined GET / POST
 # -------------------------
-class CreateStringAnalysisResultView(APIView):
-    def post(self, request):
-        serializer = CreateStringAnalysisSerializer(data=request.data)
-        if not serializer.is_valid():
-            error_message = serializer.errors.get('value', ["Invalid input"])[0]
-            return Response({"details": error_message}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
-        
-        try:
-            result = serializer.save()
-        except Exception:
-            return Response({"details": "String already exists"}, status=status.HTTP_409_CONFLICT)
-        
-        return Response({"data": StringAnalysisResultSerializer(result).data}, status=status.HTTP_201_CREATED)
+class StringListCreateView(generics.ListCreateAPIView):
+    queryset = StringAnalysisResult.objects.all().order_by('-created_at')
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = StringAnalysisResultFilter
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return CreateStringAnalysisSerializer
+        return StringAnalysisResultSerializer
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        data = make_json_safe(serializer.data)
+
+        filters_applied = {
+            k: v[0] if isinstance(v, list) else v
+            for k, v in dict(request.query_params).items()
+            if v and v != ['']
+        }
+
+        return Response({
+            "data": data,
+            "count": queryset.count(),
+            "filters_applied": filters_applied
+        })
 
 
 # -------------------------
@@ -47,48 +60,19 @@ class GetStringAnalysisResultView(APIView):
         try:
             result = StringAnalysisResult.objects.get(id=sha256_hash)
         except StringAnalysisResult.DoesNotExist:
-            return Response({"details": "String does not exist in the system"}, status=status.HTTP_404_NOT_FOUND)
-        
-        return Response({"data": StringAnalysisResultSerializer(result).data}, status=status.HTTP_200_OK)
+            return Response({"details": "String does not exist in the system"}, status=404)
+        return Response({"data": StringAnalysisResultSerializer(result).data}, status=200)
 
     def delete(self, request, string_value):
         sha256_hash = hashlib.sha256(string_value.encode('utf-8')).hexdigest()
         try:
             result = StringAnalysisResult.objects.get(id=sha256_hash)
         except StringAnalysisResult.DoesNotExist:
-            return Response({"details": "String does not exist in the system"}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response({"details": "String does not exist in the system"}, status=404)
         result.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=204)
 
 
-# -------------------------
-# GET /strings with filters
-# -------------------------
-class ListStringView(generics.ListAPIView):
-    serializer_class = StringAnalysisResultSerializer
-    queryset = StringAnalysisResult.objects.all().order_by('-created_at')
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = StringAnalysisResultFilter
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        serializer = self.get_serializer(queryset, many=True)
-        data = make_json_safe(serializer.data)
-        print("Filtered queryset:", [obj.value for obj in queryset])
-        filters_applied = {
-            k: v[0] if isinstance(v, list) else v
-            for k, v in dict(request.query_params).items()
-            if v and v != ['']
-        }
-
-        response_data = {
-            "data": data,
-            "count": queryset.count(),
-            "filters_applied": filters_applied
-        }
-
-        return Response(response_data)
 
 
 # -------------------------
