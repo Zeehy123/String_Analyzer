@@ -42,3 +42,6 @@ class StringAnalysisResultFilter(filters.FilterSet):
         if not value:
             return queryset
         return queryset.filter(components__character_frequency__has_key=value)
+
+    
+    
