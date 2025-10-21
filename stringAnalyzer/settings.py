@@ -25,6 +25,8 @@ SECRET_KEY = 'django-insecure-jc$nir65+6ot-!orqo%vygfq$i2mzlr7z9hpl_&@y+93&64&!d
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+# Disable automatic appending of slashes
+APPEND_SLASH = False
 
 ALLOWED_HOSTS = ['*']
 
