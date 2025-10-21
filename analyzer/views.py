@@ -47,9 +47,9 @@ class StringListCreateView(generics.ListCreateAPIView):
             error_message = serializer.errors.get('value', ["This field is required."])[0]
             return Response({"details": error_message}, status=status.HTTP_400_BAD_REQUEST)
         
-        # value = serializer.validated_data.get('value')
-        # if not isinstance(value, str):
-        #     return Response({"details": "Invalid input"}, status=status.HTTP_400_BAD_REQUEST)
+        value = serializer.validated_data.get('value')
+        if not isinstance(value, str):
+            return Response({"details": "Invalid input"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Save and handle duplicates
         try:
