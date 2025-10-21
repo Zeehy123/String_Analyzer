@@ -117,12 +117,7 @@ class GetStringAnalysisResultView(APIView):
 # -------------------------
 from rest_framework.decorators import api_view
 
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from .models import StringAnalysisResult
-from .serializers import StringAnalysisResultSerializer
-from .utils import parse_nl_query, make_json_safe
+
 
 @api_view(['GET'])
 def nl_query_view(request):

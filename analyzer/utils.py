@@ -40,10 +40,7 @@ import re
 import re
 
 def parse_nl_query(query: str) -> dict:
-    """
-    Parses a natural language query and returns a dictionary
-    with filter keys matching the filter names in StringAnalysisResultFilter.
-    """
+   
     query = query.lower().strip()
     filters = {}
 
