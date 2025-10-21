@@ -53,14 +53,16 @@ class GetStringAnalysisResultView(APIView):
 
         return Response(StringAnalysisResultSerializer(result).data, status=status.HTTP_200_OK)
 
-    def delete(self,request,string_value):
-        sha256_hash=hashlib.sha256(string_value.encode("utf-8")).hexdigest()
-        result=StringAnalysisResult.objects.filter(value=string_value)
-        if not result.exists():
-            return Response({"details":"not found"},status=status.HTTP_404_NOT_FOUND)
+    def delete(self, request, string_value):
+        sha256_hash = hashlib.sha256(string_value.encode("utf-8")).hexdigest()
+        try:
+            result = StringAnalysisResult.objects.get(id=sha256_hash)
+        except StringAnalysisResult.DoesNotExist:
+            return Response({"details": "String not found"}, status=status.HTTP_404_NOT_FOUND)
+
         result.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-    
+
 
 from decimal import Decimal
 
