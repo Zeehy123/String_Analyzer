@@ -26,9 +26,11 @@ class CreateStringAnalysisResultView(APIView):
     def post(self, request):
         serializer = CreateStringAnalysisSerializer(data=request.data)
         if not serializer.is_valid():
-            if "details" in serializer.errors and serializer.errors["details"] == "string already exists":
-                return Response({"details": "strings already exists"}, status=status.HTTP_409_CONFLICT)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            errors = serializer.errors
+            if "value" in errors:
+                return Response({"details": errors["value"][0]}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"details": "Invalid data"}, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             result = serializer.save()
         except ValidationError:
@@ -43,14 +45,17 @@ class GetStringAnalysisResultView(APIView):
     #GET /string/{string_id}
 
     def get(self, request, string_value):
-        
-      sha256_hash=hashlib.sha256(string_value.encode("utf-8")).hexdigest()
-      result=get_object_or_404(StringAnalysisResult, id=sha256_hash)
-      return Response(StringAnalysisResultSerializer(result).data, status=status.HTTP_200_OK)
-    
+        sha256_hash = hashlib.sha256(string_value.encode("utf-8")).hexdigest()
+        try:
+            result = StringAnalysisResult.objects.get(id=sha256_hash)
+        except StringAnalysisResult.DoesNotExist:
+            return Response({"details": "String not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(StringAnalysisResultSerializer(result).data, status=status.HTTP_200_OK)
+
     def delete(self,request,string_value):
         sha256_hash=hashlib.sha256(string_value.encode("utf-8")).hexdigest()
-        result=StringAnalysisResult.objects.filter(id=sha256_hash)
+        result=StringAnalysisResult.objects.filter(value=string_value)
         if not result.exists():
             return Response({"details":"not found"},status=status.HTTP_404_NOT_FOUND)
         result.delete()
@@ -72,7 +77,7 @@ class ListStringView(generics.ListAPIView):
 
      
         from .utils import make_json_safe
-        data = make_json_safe(data)
+        data = make_json_safe(serializer.data)
 
         filters_applied = {
             k: v[0] if isinstance(v, list) else v
@@ -86,27 +91,24 @@ class ListStringView(generics.ListAPIView):
             "filters_applied": filters_applied,
         }
 
-        # ✅ Debug: find any Decimal value before sending to Response
-        def find_decimal(obj, path="root"):
-            if isinstance(obj, Decimal):
-                print(f"⚠️ Decimal found at {path}: {obj}")
-            elif isinstance(obj, dict):
-                for k, v in obj.items():
-                    find_decimal(v, f"{path}.{k}")
-            elif isinstance(obj, list):
-                for i, v in enumerate(obj):
-                    find_decimal(v, f"{path}[{i}]")
+        # # ✅ Debug: find any Decimal value before sending to Response
+        # def find_decimal(obj, path="root"):
+        #     if isinstance(obj, Decimal):
+        #         print(f"⚠️ Decimal found at {path}: {obj}")
+        #     elif isinstance(obj, dict):
+        #         for k, v in obj.items():
+        #             find_decimal(v, f"{path}.{k}")
+        #     elif isinstance(obj, list):
+        #         for i, v in enumerate(obj):
+        #             find_decimal(v, f"{path}[{i}]")
 
-        find_decimal(response_data)
+        # find_decimal(response_data)
 
-        # ✅ Now wrap response in try-except
-        try:
-            return Response(response_data)
-        except TypeError as e:
-            print("💥 TypeError during JSON serialization:", e)
-            import pprint
-            pprint.pprint(response_data)
-            raise e
+      
+     
+        return Response(response_data)
+       
+            
 
 
 
